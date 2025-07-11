@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import localforage from 'localforage';
+import { db, storage } from '../firebase';
 
 export default function Admin() {
   const [projects, setProjects] = useState([]);
