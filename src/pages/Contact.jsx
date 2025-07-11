@@ -14,9 +14,9 @@ export default function Contact() {
     const body = encodeURIComponent(
       `Nome: ${name}\nEmail: ${email}\n\nMensagem:\n${message}`
     );
-    // Abre o cliente de e-mail padrão
+    // Envia para os dois e-mails separados por vírgula
     window.location.href =
-      `mailto:gecineidegiorgi@hotmail.com?subject=${subject}&body=${body}`;
+      `mailto:b2constru@gmail.com,betterassessoria@gmail.com?subject=${subject}&body=${body}`;
   };
 
   return (
