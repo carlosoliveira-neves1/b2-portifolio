@@ -1,6 +1,6 @@
 // src/pages/Admin.jsx
 import React, { useState, useEffect } from 'react';
-+ import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export default function Admin() {
   const [projects, setProjects] = useState([]);
@@ -14,7 +14,7 @@ export default function Admin() {
   });
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
-+ const navigate = useNavigate();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('projects')) || [];
