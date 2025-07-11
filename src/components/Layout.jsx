@@ -1,5 +1,4 @@
 // src/components/Layout.jsx
-
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
@@ -9,7 +8,8 @@ export default function Layout() {
   return (
     <div className="min-h-screen flex flex-col bg-white text-gray-800">
       <Header />
-      <main className="flex-grow container mx-auto px-4 py-8">
+      {/* Ajuste de padding-top para não ficar sob o header fixo */}
+      <main className="flex-grow container mx-auto px-4 pt-20 md:pt-8 pb-8">
         <Outlet />
       </main>
       <Footer />
