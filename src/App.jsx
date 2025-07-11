@@ -1,4 +1,4 @@
-// 2. Routing with Protected Route (src/App.jsx)
+// src/App.jsx (rotas)
 // ---------------------------------------
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
@@ -18,14 +18,7 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="portfolio" element={<PortfolioPage />} />
         <Route path="contato" element={<Contact />} />
-        <Route
-          path="administracao"
-          element={
-            <PrivateRoute>
-              <Admin />
-            </PrivateRoute>
-          }
-        />
+        <Route path="administracao" element={<PrivateRoute><Admin /></PrivateRoute>} />
       </Route>
     </Routes>
   );

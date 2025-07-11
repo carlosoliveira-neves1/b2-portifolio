@@ -1,110 +1,119 @@
-// src/pages/Admin.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import localforage from 'localforage';
 
 export default function Admin() {
   const [projects, setProjects] = useState([]);
-  // estado do formulário com edit flag
   const [form, setForm] = useState({
     id: null,
     title: '',
     description: '',
     status: 'Realizada',
-    image: null
+    images: []
   });
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
   const navigate = useNavigate();
 
+  // Carrega projetos do IndexedDB ao montar
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('projects')) || [];
-    setProjects(stored);
+    localforage.getItem('projects').then(stored => {
+      setProjects(stored || []);
+    });
   }, []);
 
+  // Gera previews ao selecionar arquivos
   useEffect(() => {
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => setPreview(reader.result);
-      reader.readAsDataURL(file);
+    if (files.length) {
+      const prs = [];
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          prs.push(reader.result);
+          if (prs.length === files.length) {
+            setPreviews(prs);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    } else {
+      setPreviews([]);
     }
-  }, [file]);
+  }, [files]);
 
   const resetForm = () => {
-    setForm({ id: null, title: '', description: '', status: 'Realizada', image: null });
-    setFile(null);
-    setPreview(null);
+    setForm({ id: null, title: '', description: '', status: 'Realizada', images: [] });
+    setFiles([]);
   };
 
   const handleSubmit = e => {
     e.preventDefault();
-    if (!form.title || (!file && !form.image)) {
-      return alert('Preencha todos os campos e selecione imagem.');
-    }
-    const saveProject = base64Image => {
-      const stored = JSON.parse(localStorage.getItem('projects')) || [];
-      let updated;
-      if (form.id) {
-        // edição
-        updated = stored.map(p =>
-          p.id === form.id
-            ? { ...p, title: form.title, description: form.description, status: form.status, image: base64Image }
-            : p
-        );
-      } else {
-        // novo
-        const newProj = {
-          id: Date.now(),
-          title: form.title,
-          description: form.description,
-          status: form.status,
-          image: base64Image
-        };
-        updated = [...stored, newProj];
-      }
-      localStorage.setItem('projects', JSON.stringify(updated));
-      setProjects(updated);
-      resetForm();
-      alert('Projeto salvo!');
-+     // força recarregar o Portfolio
-+     navigate('/portfolio');
+    const save = imgs => {
+      localforage.getItem('projects').then(stored => {
+        const base = stored || [];
+        let updated;
+        if (form.id) {
+          // edição
+          updated = base.map(p =>
+            p.id === form.id
+              ? { ...p, ...form, images: imgs }
+              : p
+          );
+        } else {
+          // novo
+          updated = [
+            ...base,
+            { ...form, id: Date.now(), images: imgs }
+          ];
+        }
+        localforage.setItem('projects', updated).then(() => {
+          setProjects(updated);
+          resetForm();
+          alert('Projeto salvo!');
+          navigate('/portfolio');
+        });
+      });
     };
 
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => saveProject(reader.result);
-      reader.readAsDataURL(file);
+    if (files.length) {
+      const prs = [];
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          prs.push(reader.result);
+          if (prs.length === files.length) {
+            save(prs);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
     } else {
-      saveProject(form.image);
+      save(form.images);
     }
   };
 
-  const handleEdit = proj => {
-    setForm({
-      id: proj.id,
-      title: proj.title,
-      description: proj.description,
-      status: proj.status,
-      image: proj.image
-    });
-    setPreview(proj.image);
-    setFile(null);
+  const handleEdit = p => {
+    setForm(p);
+    setPreviews(p.images || []);
+    setFiles([]);
   };
 
   const handleDelete = id => {
-    if (!window.confirm('Deseja realmente excluir este projeto?')) return;
-    const stored = JSON.parse(localStorage.getItem('projects')) || [];
-    const updated = stored.filter(p => p.id !== id);
-    localStorage.setItem('projects', JSON.stringify(updated));
-    setProjects(updated);
+    if (!window.confirm('Excluir projeto?')) return;
+    localforage.getItem('projects').then(stored => {
+      const updated = (stored || []).filter(p => p.id !== id);
+      localforage.setItem('projects', updated).then(() => {
+        setProjects(updated);
+      });
+    });
   };
 
   return (
-    <section>
+    <section className="pt-20">
       <h2 className="text-2xl font-semibold mb-4">
         {form.id ? 'Editar Projeto' : 'Adicionar Projeto'}
       </h2>
 
-      {/* Formulário de inclusão/edição */}
       <form onSubmit={handleSubmit} className="space-y-4 max-w-md mb-8">
         <input
           type="text"
@@ -114,6 +123,7 @@ export default function Admin() {
           className="w-full border p-2 rounded"
           required
         />
+
         <textarea
           placeholder="Descrição"
           value={form.description}
@@ -121,6 +131,7 @@ export default function Admin() {
           className="w-full border p-2 rounded h-24"
           required
         />
+
         <select
           value={form.status}
           onChange={e => setForm({ ...form, status: e.target.value })}
@@ -129,21 +140,33 @@ export default function Admin() {
           <option>Realizada</option>
           <option>Em Andamento</option>
         </select>
+
         <input
           type="file"
           accept="image/*"
-          onChange={e => setFile(e.target.files[0])}
+          multiple
+          onChange={e => setFiles(Array.from(e.target.files))}
           className="w-full"
-          required={!form.id}
         />
-        {preview && (
-          <div>
-            <label className="block mb-1">Preview:</label>
-            <img src={preview} alt="Preview" className="w-full h-48 object-cover rounded" />
+
+        {previews.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">
+            {previews.map((src, i) => (
+              <img
+                key={i}
+                src={src}
+                alt={`Preview ${i + 1}`}
+                className="w-full h-24 object-cover rounded"
+              />
+            ))}
           </div>
         )}
+
         <div className="flex space-x-2">
-          <button type="submit" className="py-2 px-4 bg-orange-500 text-white rounded">
+          <button
+            type="submit"
+            className="py-2 px-4 bg-orange-500 text-white rounded"
+          >
             {form.id ? 'Atualizar' : 'Adicionar'}
           </button>
           {form.id && (
@@ -158,28 +181,35 @@ export default function Admin() {
         </div>
       </form>
 
-      {/* Listagem de projetos */}
       <h3 className="text-xl font-semibold mb-4">Projetos Cadastrados</h3>
       <div className="space-y-4">
-        {projects.map(proj => (
-          <div key={proj.id} className="flex items-center space-x-4 border p-4 rounded">
-            <img
-              src={proj.image}
-              alt={proj.title}
-              className="w-24 h-24 object-cover rounded"
-            />
+        {projects.map(p => (
+          <div
+            key={p.id}
+            className="flex items-center space-x-4 border p-4 rounded"
+          >
+            <div className="flex-shrink-0 grid grid-cols-3 gap-1">
+              {(p.images || []).map((img, i) => (
+                <img
+                  key={i}
+                  src={img}
+                  alt={`${p.title} ${i + 1}`}
+                  className="w-16 h-16 object-cover rounded"
+                />
+              ))}
+            </div>
             <div className="flex-grow">
-              <h4 className="font-semibold">{proj.title}</h4>
-              <p className="text-sm text-gray-600">{proj.status}</p>
+              <h4 className="font-semibold">{p.title}</h4>
+              <p className="text-sm text-gray-600">{p.status}</p>
             </div>
             <button
-              onClick={() => handleEdit(proj)}
+              onClick={() => handleEdit(p)}
               className="px-2 py-1 bg-blue-500 text-white rounded"
             >
               Editar
             </button>
             <button
-              onClick={() => handleDelete(proj.id)}
+              onClick={() => handleDelete(p.id)}
               className="px-2 py-1 bg-red-500 text-white rounded"
             >
               Excluir
@@ -188,5 +218,5 @@ export default function Admin() {
         ))}
       </div>
     </section>
-  );
+);
 }

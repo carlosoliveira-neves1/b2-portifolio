@@ -1,4 +1,4 @@
-// 1. Entry Point (src/index.jsx)
+// src/index.jsx
 // ---------------------------------------
 import React from 'react';
 import ReactDOM from 'react-dom';
