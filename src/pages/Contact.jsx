@@ -1,16 +1,26 @@
+// src/pages/Contact.jsx
 import React, { useState } from 'react';
 
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleChange = e =>
+    setForm({ ...form, [e.target.name]: e.target.value });
+
   const handleSubmit = e => {
     e.preventDefault();
-    console.log('Enviar formulário:', form);
-    // TODO: integrar com serviço de email ou API
+    const { name, email, message } = form;
+    const subject = encodeURIComponent(`Contato de ${name}`);
+    const body = encodeURIComponent(
+      `Nome: ${name}\nEmail: ${email}\n\nMensagem:\n${message}`
+    );
+    // Abre o cliente de e-mail padrão
+    window.location.href =
+      `mailto:gecineidegiorgi@hotmail.com?subject=${subject}&body=${body}`;
   };
 
   return (
-    <section id="contato" className="max-w-xl mx-auto">
+    <section id="contato" className="max-w-xl mx-auto pt-20">
       <h2 className="text-3xl font-semibold mb-4 text-center">Contato</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
@@ -39,7 +49,12 @@ export default function Contact() {
           className="w-full border p-2 rounded h-32"
           required
         />
-        <button type="submit" className="w-full py-2 rounded bg-orange-500 text-white font-semibold">Enviar</button>
+        <button
+          type="submit"
+          className="w-full py-2 rounded bg-orange-500 text-white font-semibold"
+        >
+          Enviar
+        </button>
       </form>
     </section>
   );
